@@ -1,18 +1,22 @@
-# Ignore everything
-except these:
-!frontend/**/*
+# Include all files by default
+*.*
+
+# Then exclude specific directories
+!frontend/
 !vercel.json
+!.vercelignore
 !.gitignore
+!.gitmodules
 !README.md
 
-# Ignore specific files and directories
-.git
+# Exclude unnecessary files and directories
+.git/
 .gitmodules
-node_modules
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+node_modules/
+frontend/node_modules/
+.env*
+*.log
+*.log.*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
