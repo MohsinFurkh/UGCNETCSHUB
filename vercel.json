@@ -5,15 +5,11 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "build",
-        "buildCommand": "npm run build",
-        "env": {
-          "CI": "false",
-          "DISABLE_ESLINT_PLUGIN": "true"
-        }
+        "distDir": "build"
       }
     }
   ],
+  "buildCommand": "CI=false DISABLE_ESLINT_PLUGIN=true npm run build",
   "routes": [
     {
       "src": "/static/(.*)",
