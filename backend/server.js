@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // Database connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/ugcnetcshub', {
+mongoose.connect('mongodb+srv://vercel-admin-user:GkpWgGEpnmPeCa67@ugcnetcsdatabase.2s1bq3f.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
