@@ -9,14 +9,17 @@
       }
     }
   ],
-  "buildCommand": "CI=false DISABLE_ESLINT_PLUGIN=true npm run build",
   "routes": [
     {
-      "src": "/static/(.*)",
+      "src": "^/static/(.*)",
       "dest": "/frontend/build/static/$1"
     },
     {
-      "src": "/(.*)",
+      "src": "^/_next/static/(.*)",
+      "dest": "/frontend/build/_next/static/$1"
+    },
+    {
+      "src": "^/(.*)",
       "dest": "/frontend/build/index.html"
     }
   ]
