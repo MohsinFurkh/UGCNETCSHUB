@@ -1,22 +1,26 @@
-# Ignore everything by default
-*/
+# Include everything by default
+*
 
-# Include necessary files and directories
-!frontend/
-!frontend/**/*
-!vercel.json
-!.vercelignore
+# Then exclude specific files and directories
 !.gitignore
-!.gitmodules
+!.vercelignore
+!vercel.json
 !README.md
 
-# Exclude unnecessary files and directories
-.git/
-.gitmodules
-**/node_modules/
-.env*
-*.log
-*.log.*
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Include frontend directory and its contents
+!frontend/
+!frontend/**/*
+
+# Exclude node_modules and other unnecessary files
+**/node_modules/**
+**/.git/**
+**/.gitmodules
+**/.env*
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/.next
+**/build
+**/dist
+**/out
