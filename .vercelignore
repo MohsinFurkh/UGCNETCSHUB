@@ -1,8 +1,9 @@
-# Include all files by default
-*.*
+# Ignore everything by default
+*/
 
-# Then exclude specific directories
+# Include necessary files and directories
 !frontend/
+!frontend/**/*
 !vercel.json
 !.vercelignore
 !.gitignore
@@ -12,8 +13,7 @@
 # Exclude unnecessary files and directories
 .git/
 .gitmodules
-node_modules/
-frontend/node_modules/
+**/node_modules/
 .env*
 *.log
 *.log.*
