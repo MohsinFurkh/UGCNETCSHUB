@@ -10,9 +10,11 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://ugc-net-cs-hub.vercel.app', // Update with your frontend URL
+    'https://ugc-net-cs-hub.vercel.app',
+    'https://ugcnetcshub.vercel.app' // Added production frontend URL
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 app.use(express.json());
 
