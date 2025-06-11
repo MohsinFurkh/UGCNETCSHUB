@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { setAlert } from '../alert/alertSlice';
+import { API_BASE_URL } from '../../utils/apiConfig';
 
 // Async thunks
 export const register = createAsyncThunk(
@@ -16,7 +17,7 @@ export const register = createAsyncThunk(
 
       const body = JSON.stringify({ name, email, password });
 
-      const res = await axios.post('http://localhost:5000/api/auth/register', body, config);
+      const res = await axios.post(`${API_BASE_URL}/auth/register`, body, config);
 
       if (res.data) {
         // Store the token in local storage
@@ -68,7 +69,7 @@ export const login = createAsyncThunk(
 
       const body = JSON.stringify({ email, password });
 
-      const res = await axios.post('http://localhost:5000/api/auth/login', body, config);
+      const res = await axios.post(`${API_BASE_URL}/auth/login`, body, config);
 
       if (res.data) {
         // Store the token in local storage
@@ -118,7 +119,7 @@ export const loadUser = createAsyncThunk(
         setAuthToken(token);
       }
 
-      const res = await axios.get('/api/auth/profile');
+      const res = await axios.get(`${API_BASE_URL}/auth/profile`);
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || 'Failed to load user');
@@ -144,7 +145,7 @@ export const updateProfile = createAsyncThunk(
 
       const body = JSON.stringify({ name, email, password: password || undefined });
 
-      const res = await axios.put('/api/auth/profile', body, config);
+      const res = await axios.put(`${API_BASE_URL}/auth/profile`, body, config);
 
       dispatch(
         setAlert({ message: 'Profile updated!', alertType: 'success' })
