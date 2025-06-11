@@ -3,23 +3,37 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 
-// Load environment variables
-dotenv.config();
-
-// Initialize Express app
+// Create Express app
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://ugc-net-cs-hub.vercel.app', // Update with your frontend URL
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
+// Load environment variables
+dotenv.config();
+
+// Load environment variables
+dotenv.config();
+
 // Database connection
-mongoose.connect('mongodb+srv://vercel-admin-user:GkpWgGEpnmPeCa67@ugcnetcsdatabase.2s1bq3f.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://vercel-admin-user:GkpWgGEpnmPeCa67@ugcnetcsdatabase.2s1bq3f.mongodb.net/myFirstDatabase?retryWrites=true&w=majority';
+
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
 })
 .then(() => console.log('MongoDB connected successfully'))
-.catch(err => console.error('MongoDB connection error:', err));
+.catch(err => {
+  console.error('MongoDB connection error:', err);
+  process.exit(1);
+});
 
 // Basic Route
 app.get('/', (req, res) => {
@@ -38,8 +52,13 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!');
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+// Start server only if not in Vercel environment
+if (process.env.VERCEL !== '1') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-});
+  });
+}
+
+// Export the Express API for Vercel
+module.exports = app;
