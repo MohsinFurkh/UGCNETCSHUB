@@ -7,19 +7,35 @@ const dotenv = require('dotenv');
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://ugc-net-cs-hub.vercel.app',
-    'https://ugcnetcshub.vercel.app' // Added production frontend URL
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-}));
-app.use(express.json());
+// CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://ugc-net-cs-hub.vercel.app',
+  'https://ugcnetcshub.vercel.app',
+  'https://ugcnetcshubbackend-git-main-mohsin-furkh-dars-projects.vercel.app',
+  'https://ugcnetcshubbackend.vercel.app'
+];
 
-// Load environment variables
-dotenv.config();
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
+}));
+
+// Handle preflight requests
+app.options('*', cors());
+app.use(express.json());
 
 // Load environment variables
 dotenv.config();
