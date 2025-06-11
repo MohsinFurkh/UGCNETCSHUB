@@ -19,7 +19,9 @@ router.get('/', getQuestions);
 router.get('/:id', getQuestionById);
 router.get('/subject/:subjectId', getQuestionsBySubject);
 router.get('/topic/:topicId', getQuestionsByTopic);
-router.get('/year/:year/:month?', getQuestionsByYear);
+// Handle both /year/2023 and /year/2023/06 patterns
+router.get('/year/:year', getQuestionsByYear);
+router.get('/year/:year/:month', getQuestionsByYear);
 
 // Protected routes
 router.post('/:id/answer', protect, submitAnswer);

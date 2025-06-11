@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import { login, clearAuthError } from '../../features/auth/authSlice';
 import { setAlert } from '../../features/alert/alertSlice';
 import {
@@ -25,57 +27,88 @@ import {
   Google as GoogleIcon,
   Facebook as FacebookIcon,
 } from '@mui/icons-material';
-
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    showPassword: false,
+  // Form validation schema
+  const validationSchema = Yup.object({
+    email: Yup.string()
+      .email('Invalid email address')
+      .required('Email is required'),
+    password: Yup.string()
+      .required('Password is required'),
   });
 
-  const { email, password, showPassword } = formData;
+  const formik = useFormik({
+    initialValues: {
+      email: '',
+      password: '',
+      showPassword: false,
+    },
+    validationSchema,
+    onSubmit: async (values, { setSubmitting, setFieldError }) => {
+      try {
+        await dispatch(login({
+          email: values.email,
+          password: values.password
+        })).unwrap();
+        
+        // Reset form after successful submission
+        formik.resetForm();
+      } catch (error) {
+        // Error is already handled in the authSlice
+        setSubmitting(false);
+      }
+    },
+  });
+
+  const { 
+    values, 
+    errors, 
+    touched, 
+    isSubmitting, 
+    handleChange, 
+    handleBlur, 
+    handleSubmit,
+    setFieldValue,
+    setFieldTouched
+  } = formik;
   const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
 
   const redirect = location.search ? `/${location.search.split('=')[1]}` : '/';
+  
+  // Clear any existing errors when component mounts
+  useEffect(() => {
+    dispatch(clearAuthError());
+  }, [dispatch]);
 
   useEffect(() => {
+    // Only redirect if authenticated
     if (isAuthenticated) {
-      navigate(redirect);
+      navigate(redirect || '/');
     }
+  }, [isAuthenticated, navigate, redirect]);
 
+  useEffect(() => {
+    // Show error if there is an error
     if (error) {
       dispatch(setAlert({ message: error, alertType: 'error' }));
-      dispatch(clearAuthError());
+      // Clear the error after showing the alert
+      const timer = setTimeout(() => {
+        dispatch(clearAuthError());
+      }, 5000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, error, navigate, redirect, dispatch]);
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  }, [error, dispatch]);
+  
+  // Reset submitting state is handled by Formik
 
   const handleClickShowPassword = () => {
-    setFormData({
-      ...formData,
-      showPassword: !showPassword,
-    });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!email || !password) {
-      dispatch(setAlert({ message: 'Please enter both email and password', alertType: 'error' }));
-      return;
-    }
-
-    dispatch(login({ email, password }));
+    setFieldValue('showPassword', !formik.values.showPassword);
   };
 
   const handleGoogleLogin = () => {
@@ -133,14 +166,17 @@ const Login = () => {
               name="email"
               autoComplete="email"
               autoFocus
-              value={email}
+              value={values.email}
               onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.email && Boolean(errors.email)}
+              helperText={touched.email && errors.email}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
                     <EmailIcon color="action" />
                   </InputAdornment>
-                ),
+                )
               }}
               sx={{ mb: 2 }}
             />
@@ -151,11 +187,14 @@ const Login = () => {
               fullWidth
               name="password"
               label="Password"
-              type={showPassword ? 'text' : 'password'}
+              type={values.showPassword ? 'text' : 'password'}
               id="password"
               autoComplete="current-password"
-              value={password}
+              value={values.password}
               onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.password && Boolean(errors.password)}
+              helperText={touched.password && errors.password}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -167,9 +206,10 @@ const Login = () => {
                     <IconButton
                       aria-label="toggle password visibility"
                       onClick={handleClickShowPassword}
+                      onMouseDown={(e) => e.preventDefault()}
                       edge="end"
                     >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                      {values.showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -195,7 +235,8 @@ const Login = () => {
               variant="contained"
               color="primary"
               size="large"
-              disabled={loading}
+              disabled={isSubmitting || loading}
+              startIcon={isSubmitting || loading ? <CircularProgress size={20} color="inherit" /> : null}
               sx={{
                 py: 1.5,
                 borderRadius: 2,
@@ -206,7 +247,7 @@ const Login = () => {
                 mb: 2,
               }}
             >
-              {loading ? (
+              {isSubmitting ? (
                 <CircularProgress size={24} color="inherit" />
               ) : (
                 'Sign In'

@@ -16,23 +16,42 @@ export const register = createAsyncThunk(
 
       const body = JSON.stringify({ name, email, password });
 
-      const res = await axios.post('/api/auth/register', body, config);
+      const res = await axios.post('http://localhost:5000/api/auth/register', body, config);
 
-      dispatch(
-        setAlert({ message: 'Registration successful!', alertType: 'success' })
-      );
-
-      return res.data;
-    } catch (err) {
-      const errors = err.response?.data?.errors;
-
-      if (errors) {
-        errors.forEach((error) =>
-          dispatch(setAlert({ message: error.msg, alertType: 'error' }))
+      if (res.data) {
+        // Store the token in local storage
+        localStorage.setItem('token', res.data.token);
+        
+        dispatch(
+          setAlert({ message: 'Registration successful!', alertType: 'success' })
         );
+        
+        return res.data;
+      } else {
+        return rejectWithValue('Registration failed - No data received');
       }
-
-      return rejectWithValue(err.response?.data || 'Registration failed');
+    } catch (err) {
+      // Handle different types of errors
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (err.response) {
+        // Server responded with an error status code
+        if (err.response.status === 400 && err.response.data.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response.data.errors) {
+          // Handle validation errors
+          err.response.data.errors.forEach(error => {
+            dispatch(setAlert({ message: error.msg, alertType: 'error' }));
+          });
+          return rejectWithValue('Validation error');
+        }
+      } else if (err.request) {
+        // Request was made but no response received
+        errorMessage = 'No response from server. Please check your connection.';
+      }
+      
+      dispatch(setAlert({ message: errorMessage, alertType: 'error' }));
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -49,30 +68,42 @@ export const login = createAsyncThunk(
 
       const body = JSON.stringify({ email, password });
 
-      const res = await axios.post('/api/auth/login', body, config);
+      const res = await axios.post('http://localhost:5000/api/auth/login', body, config);
 
-      dispatch(
-        setAlert({ message: 'Login successful!', alertType: 'success' })
-      );
-
-      return res.data;
-    } catch (err) {
-      const errors = err.response?.data?.errors;
-
-      if (errors) {
-        errors.forEach((error) =>
-          dispatch(setAlert({ message: error.msg, alertType: 'error' }))
-        );
-      } else {
+      if (res.data) {
+        // Store the token in local storage
+        localStorage.setItem('token', res.data.token);
+        
         dispatch(
-          setAlert({
-            message: err.response?.data?.message || 'Login failed',
-            alertType: 'error',
-          })
+          setAlert({ message: 'Login successful!', alertType: 'success' })
         );
+        
+        return res.data;
+      } else {
+        return rejectWithValue('Login failed - No data received');
       }
-
-      return rejectWithValue(err.response?.data || 'Login failed');
+    } catch (err) {
+      // Handle different types of errors
+      let errorMessage = 'Login failed. Please check your credentials and try again.';
+      
+      if (err.response) {
+        // Server responded with an error status code
+        if (err.response.status === 400 || err.response.status === 401) {
+          errorMessage = err.response.data.message || 'Invalid email or password';
+        } else if (err.response.data.errors) {
+          // Handle validation errors
+          err.response.data.errors.forEach(error => {
+            dispatch(setAlert({ message: error.msg, alertType: 'error' }));
+          });
+          return rejectWithValue('Validation error');
+        }
+      } else if (err.request) {
+        // Request was made but no response received
+        errorMessage = 'No response from server. Please check your connection.';
+      }
+      
+      dispatch(setAlert({ message: errorMessage, alertType: 'error' }));
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -160,9 +191,13 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.loading = false;
       state.user = null;
+      state.error = null;
     },
     clearAuthError: (state) => {
       state.error = null;
+    },
+    clearLoading: (state) => {
+      state.loading = false;
     },
   },
   extraReducers: (builder) => {
@@ -232,7 +267,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearAuthError } = authSlice.actions;
+export const { logout, clearAuthError, clearLoading } = authSlice.actions;
 
 export const selectCurrentUser = (state) => state.auth.user;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;

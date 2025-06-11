@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { BrowserRouter as Router, Routes, Route, Link as RouterLink } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -6,8 +7,10 @@ import {
   Box, 
   Container, 
   Typography, 
-  Button 
+  Button,
+  CircularProgress
 } from '@mui/material';
+import axios from 'axios';
 
 // Components
 import Navbar from './components/layout/Navbar';
@@ -22,6 +25,18 @@ import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import Profile from './pages/profile/Profile';
+
+// Redux actions
+import { clearLoading } from './features/auth/authSlice';
+
+// Set auth token function
+const setAuthToken = (token) => {
+  if (token) {
+    axios.defaults.headers.common['x-auth-token'] = token;
+  } else {
+    delete axios.defaults.headers.common['x-auth-token'];
+  }
+};
 
 // Placeholder components for routes that will be implemented later
 const ComingSoon = () => (
@@ -122,6 +137,37 @@ const theme = createTheme({
 });
 
 function App() {
+  const dispatch = useDispatch();
+  const loading = useSelector((state) => state.auth.loading);
+
+  // Initialize authentication state when app loads
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      setAuthToken(token);
+    }
+    // Clear any existing loading state after initialization
+    const timer = setTimeout(() => {
+      dispatch(clearLoading());
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [dispatch]);
+
+  if (loading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

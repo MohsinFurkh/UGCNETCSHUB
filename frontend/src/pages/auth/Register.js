@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { register, clearAuthError } from '../../features/auth/authSlice';
 import { setAlert } from '../../features/alert/alertSlice';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import {
   Box,
   Button,
@@ -33,25 +35,64 @@ const Register = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    showPassword: false,
-    showConfirmPassword: false,
-    termsAccepted: false,
+  // Form validation schema
+  const validationSchema = Yup.object({
+    name: Yup.string()
+      .min(2, 'Name must be at least 2 characters')
+      .required('Name is required'),
+    email: Yup.string()
+      .email('Invalid email address')
+      .required('Email is required'),
+    password: Yup.string()
+      .min(6, 'Password must be at least 6 characters')
+      .required('Password is required'),
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref('password'), null], 'Passwords must match')
+      .required('Please confirm your password'),
+    termsAccepted: Yup.boolean()
+      .oneOf([true], 'You must accept the terms and conditions')
+      .required('You must accept the terms and conditions')
+  });
+
+  const formik = useFormik({
+    initialValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      showPassword: false,
+      showConfirmPassword: false,
+      termsAccepted: false,
+    },
+    validationSchema,
+    onSubmit: async (values, { setSubmitting, setFieldError }) => {
+      try {
+        await dispatch(register({
+          name: values.name,
+          email: values.email,
+          password: values.password
+        })).unwrap();
+        
+        // Reset form after successful submission
+        formik.resetForm();
+      } catch (error) {
+        // Error is already handled in the authSlice
+        setSubmitting(false);
+      }
+    },
   });
 
   const { 
-    name, 
-    email, 
-    password, 
-    confirmPassword, 
-    showPassword, 
-    showConfirmPassword, 
-    termsAccepted 
-  } = formData;
+    values, 
+    errors, 
+    touched, 
+    isSubmitting, 
+    handleChange, 
+    handleBlur, 
+    handleSubmit,
+    setFieldValue,
+    setFieldTouched
+  } = formik;
 
   const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
 
@@ -66,41 +107,8 @@ const Register = () => {
     }
   }, [isAuthenticated, error, navigate, dispatch]);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleCheckboxChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.checked,
-    });
-  };
-
   const handleClickShowPassword = (field) => {
-    setFormData({
-      ...formData,
-      [field]: !formData[field],
-    });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (password !== confirmPassword) {
-      dispatch(setAlert({ message: 'Passwords do not match', alertType: 'error' }));
-      return;
-    }
-
-    if (!termsAccepted) {
-      dispatch(setAlert({ message: 'Please accept the terms and conditions', alertType: 'error' }));
-      return;
-    }
-
-    dispatch(register({ name, email, password }));
+    setFieldValue(field, !formik.values[field]);
   };
 
   return (
@@ -148,8 +156,11 @@ const Register = () => {
               name="name"
               autoComplete="name"
               autoFocus
-              value={name}
+              value={values.name}
               onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.name && Boolean(errors.name)}
+              helperText={touched.name && errors.name}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -168,8 +179,11 @@ const Register = () => {
               label="Email Address"
               name="email"
               autoComplete="email"
-              value={email}
+              value={values.email}
               onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.email && Boolean(errors.email)}
+              helperText={touched.email && errors.email}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -186,11 +200,14 @@ const Register = () => {
               fullWidth
               name="password"
               label="Password"
-              type={showPassword ? 'text' : 'password'}
+              type={values.showPassword ? 'text' : 'password'}
               id="password"
               autoComplete="new-password"
-              value={password}
+              value={values.password}
               onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.password && Boolean(errors.password)}
+              helperText={touched.password && errors.password}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -202,9 +219,10 @@ const Register = () => {
                     <IconButton
                       aria-label="toggle password visibility"
                       onClick={() => handleClickShowPassword('showPassword')}
+                      onMouseDown={(e) => e.preventDefault()}
                       edge="end"
                     >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                      {values.showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -218,10 +236,13 @@ const Register = () => {
               fullWidth
               name="confirmPassword"
               label="Confirm Password"
-              type={showConfirmPassword ? 'text' : 'password'}
+              type={values.showConfirmPassword ? 'text' : 'password'}
               id="confirmPassword"
-              value={confirmPassword}
+              value={values.confirmPassword}
               onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.confirmPassword && Boolean(errors.confirmPassword)}
+              helperText={touched.confirmPassword && errors.confirmPassword}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -233,9 +254,10 @@ const Register = () => {
                     <IconButton
                       aria-label="toggle confirm password visibility"
                       onClick={() => handleClickShowPassword('showConfirmPassword')}
+                      onMouseDown={(e) => e.preventDefault()}
                       edge="end"
                     >
-                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                      {values.showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -248,24 +270,30 @@ const Register = () => {
                 <Checkbox
                   name="termsAccepted"
                   color="primary"
-                  checked={termsAccepted}
-                  onChange={handleCheckboxChange}
+                  checked={values.termsAccepted}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                 />
               }
               label={
                 <Typography variant="body2">
                   I agree to the{' '}
-                  <Link href="/terms" color="primary" underline="hover">
+                  <Link component={RouterLink} to="/terms" color="primary">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link href="/privacy" color="primary" underline="hover">
+                  <Link component={RouterLink} to="/privacy" color="primary">
                     Privacy Policy
                   </Link>
                 </Typography>
               }
-              sx={{ mb: 3 }}
+              sx={{ mb: 3, alignItems: 'flex-start' }}
             />
+            {touched.termsAccepted && errors.termsAccepted && (
+              <Typography color="error" variant="caption" display="block" gutterBottom>
+                {errors.termsAccepted}
+              </Typography>
+            )}
 
             <Button
               type="submit"
@@ -273,8 +301,8 @@ const Register = () => {
               variant="contained"
               color="primary"
               size="large"
-              disabled={loading}
-              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SchoolIcon />}
+              disabled={isSubmitting || loading}
+              startIcon={isSubmitting || loading ? <CircularProgress size={20} color="inherit" /> : <SchoolIcon />}
               sx={{
                 py: 1.5,
                 borderRadius: 2,
@@ -284,7 +312,7 @@ const Register = () => {
                 mb: 2,
               }}
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {isSubmitting || loading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </Box>
 
